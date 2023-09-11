@@ -80,8 +80,10 @@ def main(before, after, data_path=r'../data', update_master=True):
         gkg_df = pd.concat([gkg_df, file_df])
 
     ### Save data as CSV ###
-    gkg_csv_filepath = os.path.join(data_path, 'raw', f'gdelt_gkg_{after}_{before}.csv.zip')
+    # define filepath
+    gkg_csv_filepath = os.path.join(data_path, 'raw', f'gdelt_gkg_{after}_{before}.csv.gz')
     print(f'Saving GKG data as {gkg_csv_filepath}')
+    # save in compressed format
     gkg_df.to_csv(gkg_csv_filepath, index=None, compression='infer')
 
 ### SCRIPT TO RUN WHEN CALLED STANDALONE ###
