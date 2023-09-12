@@ -42,16 +42,17 @@ def define_gkg_header(mode='all'):
         return
     
 ### MAIN PROGRAM ###
-def main(before, after, data_path=r'../data', update_master=True):
+def main(before, after, master_filepath, gdrive_cred_file, gdrive_folder_id, update_master=True):
     ### Initialise ###
     # import libraries
     import os
     import pandas as pd
     from tqdm import tqdm
+    from src.google_drive import create_gdrive_client, upload_file
 
     ### Master file list ###
     # define filepath for master list
-    master_csv_filepath = os.path.join(data_path, 'meta', 'gdelt_gkg_masterfilelist.csv')
+    master_csv_filepath = os.path.normpath(master_filepath)
     # either download master file or use local copy
     if (not os.path.isfile(master_csv_filepath)) or (update_master==True):
         print('Getting the latest master file list from data.gdeltproject.org')
@@ -79,12 +80,19 @@ def main(before, after, data_path=r'../data', update_master=True):
         # append into dataframe
         gkg_df = pd.concat([gkg_df, file_df])
 
-    ### Save data as CSV ###
-    # define filepath
-    gkg_csv_filepath = os.path.join(data_path, 'raw', f'gdelt_gkg_{after}_{before}.csv.gz')
-    print(f'Saving GKG data as {gkg_csv_filepath}')
+    ### Save data as CSV in Google Drive ###
+    # define filename
+    gkg_csv_filename = f'gdelt_gkg_{after}_{before}.csv.gz'
+    print(f'Saving GKG data as {gkg_csv_filename}')
     # save in compressed format
-    gkg_df.to_csv(gkg_csv_filepath, index=None, compression='infer')
+    gkg_df.to_csv(gkg_csv_filename, index=None, compression='infer')
+    # authenticate and create Google Drive client
+    gdrive = create_gdrive_client(gdrive_cred_file)
+    # upload file to Google Drive
+    upload_file(gdrive, gdrive_folder_id, gkg_csv_filename)
+    print('Data saved in Google Drive')
+    # cleanup local file
+    os.remove(gkg_csv_filename)
 
 ### SCRIPT TO RUN WHEN CALLED STANDALONE ###
 if __name__=='__main__':
@@ -93,9 +101,11 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--after', help='date input in the format YYYY-MM-DD')
     parser.add_argument('--before', help='date input in the format YYYY-MM-DD')
-    parser.add_argument('--data_path', default=r'../data', help='path to data folder, must contain "raw" and "meta" subfolders')
+    parser.add_argument('--master_filepath', default=r'../data/meta/gdelt_gkg_masterfilelist.csv', help='path to master file list CSV')
+    parser.add_argument('--gdrive_cred_file', default=r'../auth/gdrive_credentials.txt', help='path to Google Drive credentials file')
+    parser.add_argument('--gdrive_folder_id', default='17Jd7UpDaN230tO_U3MTFuE4GDbfYSIv6', help='Google Drive folder ID')
     parser.add_argument('--update_master', action=argparse.BooleanOptionalAction, default=True, help='download and save the master file list from GDELT')
     args = parser.parse_args()
 
     # run main
-    main(args.before, args.after, args.data_path, args.update_master)
+    main(args.before, args.after, args.master_filepath, args.gdrive_cred_file , args.gdrive_folder_id, args.update_master)
