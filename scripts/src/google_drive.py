@@ -1,4 +1,4 @@
-def create_gdrive_client(cred_file='../auth/gdrive_credentials.txt'):
+def create_gdrive_client(cred_file=r'../auth/gdrive_credentials.txt'):
     """Authenticates for app and user access using PyDrive2 and creates a Google Drive client.
 
     Args:
