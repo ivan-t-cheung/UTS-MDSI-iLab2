@@ -48,6 +48,7 @@ def main(before, after, master_filepath, gdrive_cred_file, gdrive_folder_id, upd
     import os
     import pandas as pd
     from tqdm import tqdm
+    import urllib
     from src.google_drive import create_gdrive_client, upload_file
 
     ### Master file list ###
@@ -65,21 +66,27 @@ def main(before, after, master_filepath, gdrive_cred_file, gdrive_folder_id, upd
     # TODO: type check the datetime input arguments
     # apply datetime range filter to master list dataframe
     datetime_mask = (master_df['datetime'] > after) & (master_df['datetime'] <= before)   # assumes datetime is end of period
-    print(f'Getting files between start of {after} and end of {before}')
+    print(f'Getting files between the start of {after} and the start of {before}')
     filtered_master_df = master_df.loc[datetime_mask]
 
     ### Download CSVs and append into a dataframe ###
     # initialise dataframe and header names for GKG data
     gkg_df = pd.DataFrame()
     gkg_header = define_gkg_header('all')
+    http_err_count = 0
     # for each URL in master list range
     for url in tqdm(filtered_master_df['url'].to_list(), desc="Downloading files"):
         # read zipped CSV file, select only required columns
-        file_df = pd.read_csv(url, compression='zip', encoding='utf-8', encoding_errors='replace', \
-                              sep='\t', names=gkg_header, usecols=define_gkg_header('usecols'))
+        try:
+            file_df = pd.read_csv(url, compression='zip', encoding='utf-8', encoding_errors='replace', \
+                                sep='\t', names=gkg_header, usecols=define_gkg_header('usecols'))
+        # skip if http error
+        except urllib.error.HTTPError as err:
+            http_err_count += 1
         # append into dataframe
         gkg_df = pd.concat([gkg_df, file_df])
-
+    if http_err_count > 0:
+        print(f'{http_err_count} files skipped due to HTTP errors')
     ### Save data as CSV in Google Drive ###
     # define filename
     gkg_csv_filename = f'gdelt_gkg_{after}_{before}.csv.gz'
