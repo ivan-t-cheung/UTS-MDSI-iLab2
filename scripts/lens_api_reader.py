@@ -96,8 +96,8 @@ def response_include():
                 "biblio.application_reference.doc_number",
                 "biblio.invention_title.text", 
                 "biblio.classifications_cpc.classifications.symbol", 
-                "biblio.parties.inventors.residence",
-                "biblio.parties.applicants.residence"
+                "biblio.parties.inventors",
+                "biblio.parties.applicants"
                 ],
     '''
     return include
