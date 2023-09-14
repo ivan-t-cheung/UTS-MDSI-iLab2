@@ -159,5 +159,8 @@ cython_debug/
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
 
-data/raw/journals/.DS_Store
+# raw data
 data/raw/journals
+# Google Drive credentials
+client_secrets.json
+gdrive_credentials.txt
