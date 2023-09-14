@@ -160,9 +160,4 @@ cython_debug/
 #.idea/
 
 data/raw/journals/.DS_Store
-data/*
-# Google Drive credentials
-client_secrets.json
-gdrive_credentials.txt
-data/processed/partial/
-data/raw/patents/
+data/raw/journals

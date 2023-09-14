@@ -4,7 +4,6 @@ import argparse
 
 search_url = 'https://api.lens.org/scholarly/search'
 auth_json = '../../api_auth.json' 
-q_countries = ['United States', 'Australia']     ## set the countries to retrieve, see https://docs.api.lens.org/request-scholar.html
 q_type = 'Journal'                               ## set the publication types to retrieve, see https://docs.api.lens.org/response-scholar.html                                     ## set empty year
 q_size = 100                                     ## set the number of journals to return each query. For paid licences change this number to 1,000 - 10,000
 max_limit = 300                                  ## set the limit on the number of results to query for. This will override the max results if lower.
@@ -13,7 +12,7 @@ max_limit = 300                                  ## set the limit on the number 
 # Define the filters for match
 filters_dict = {
     'source.type': q_type,
-    'source.country':  q_countries,                 
+    'language': "en",                 
     'is_open_access': True,
     'has_abstract': True
 }
@@ -72,6 +71,15 @@ def build_query(filters_dict, start_from, start_d, end_d):
     query = {
         "query": query_must,
         "sort": [{"date_published": "asc"}], # sort with date published
+        "include": ["lens_id", 
+                "title", 
+                "abstract", 
+                "date_published", 
+                "authors",
+                "fields_of_study",
+                "keywords",
+                "funding"
+                ],
         "from": start_from, 
         "size": q_size  # Number of results per page (adjust as needed)
     }
