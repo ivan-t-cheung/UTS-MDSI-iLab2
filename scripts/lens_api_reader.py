@@ -221,15 +221,28 @@ def ingest_patents(start_d, end_d):
 
 
 def save_patent_data(response_text, filename):
+    from src.google_drive import create_gdrive_client, upload_file
+    file_destination = patent_data_folder + filename
     ## save to local (this option always happens regardless of save_to settting)
-    f = open(patent_data_folder + filename, "w", encoding='utf-8')
+    f = open(file_destination, "w", encoding='utf-8')
     f.write(response_text)
     f.close()
     print("saved results to local folder: " + patent_data_folder + filename)
 
     ## if save option is gdrive
     if (save_to == 'gdrive'):
-        print('saved results to google drive repo')
+        settings = configparser.ConfigParser(inline_comment_prefixes="#")
+        settings.read(config_file)
+        
+        #get google drive info
+        gdrive_cred_file = settings['GDRIVE']['credentials']
+        gdrive_folder_id = settings['GDRIVE.FOLDER_IDS']['patent_data']
+        
+        # authenticate and create Google Drive client
+        gdrive = create_gdrive_client(gdrive_cred_file)
+        # upload file to Google Drive
+        upload_file(gdrive, gdrive_folder_id, file_destination)
+        print('Data saved in Google Drive')
 
     ## if save option is azure
     if (save_to == 'azure'):
