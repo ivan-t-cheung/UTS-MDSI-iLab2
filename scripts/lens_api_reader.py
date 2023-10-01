@@ -1,4 +1,6 @@
 ## Library imports
+import configparser
+import ast
 import json
 import requests
 import argparse
@@ -8,26 +10,68 @@ from datetime import timedelta
 import sys
 
 ##set global variables
-search_url = 'https://api.lens.org/patent/search'
+config_file = '../config.ini'
+
+search_url = ''
 authkey = ''
+q_juridictions = []
+q_types = []  
+q_size = 0 
+max_limit = 0 
+save_to = ''
+patent_data_folder = ''
 
-auth_json = '../auth/api_auth.json'                                 ## change folder path if required
-q_juridictions = ['jurisdiction', 'US', 'AU']                       ## set the countries to retrieve, see https://docs.api.lens.org/request-patent.html
-q_types = ['publication_type', 'GRANTED_PATENT', 'AMENDED_PATENT']  ## set the publication types to retrieve, see https://docs.api.lens.org/response-patent.html
-q_size = 100                                                        ## set the number of patents to return each query. For paid licences change this number to 1,000 - 10,000
-max_limit = 300                                                     ## set the limit on the number of results to query for. This will override the max results if lower.
+##
+# set global variables from config file
+#
+##
+def set_config():
+    ## open config file
+    settings = configparser.ConfigParser(inline_comment_prefixes="#")
+    settings.read(config_file)
 
-###
-# Get API authorisation code from file.
-###
-def get_auth():
+    ## define global variables
+    global search_url
     global authkey
+    global q_juridictions
+    global q_types
+    global q_size
+    global max_limit
+    global save_to
+    global patent_data_folder
 
-    api_auth = open(auth_json, "r")
-    authkey = json.load(api_auth)['lens']
-    api_auth.close()
+    ## load config settings
+    authkey = settings['LENS_API']['api_key']
+    search_url = settings['LENS_API.PATENTS']['patent_search']
+    q_juridictions = ast.literal_eval(settings["LENS_API.PATENTS"]["juridictions"])
+    q_types = ast.literal_eval(settings['LENS_API.PATENTS']['types'])
+    q_size = settings['LENS_API.PATENTS']['size'] 
+    max_limit = settings['LENS_API.PATENTS']['max_limit'] 
+    patent_data_folder = settings['DEFAULT']['raw_data_folder'] + settings['LENS_API.PATENTS']['patent_subfolder'] 
 
-    return authkey
+    save_to = settings['DEFAULT']['save_data']
+
+    return
+
+def confirm_valid_save(option):
+    settings = configparser.ConfigParser(inline_comment_prefixes="#")
+    settings.read(config_file)
+
+    valid_options = ast.literal_eval(settings['DEFAULT']['valid_save_options'])
+
+    if option in valid_options:
+        return True
+    else:
+        return False
+
+##
+#   Override the default save option with argument
+##
+def set_save_option(option):
+    global save_to
+
+    save_to = option
+    return
 
 ###
 #   This function builds the query search parameters for each termininology to filter against.
@@ -129,7 +173,7 @@ def get_response(data, start_from = 0):
     ''' % (start_from, size)
 
     data = data + data_suffix
-    headers = {'Authorization': get_auth(), 'Content-Type': 'application/json'}
+    headers = {'Authorization': authkey, 'Content-Type': 'application/json'}
     response = requests.post(search_url, data=data, headers=headers)
 
     return response
@@ -159,21 +203,37 @@ def ingest_patents(start_d, end_d):
             return
         else:
             ## save results
-            response_json = response.json()
-            filename = "../data/raw/patents/" + f"patents_{start_d}_to_{end_d}_from_{start_from}.json"
-            f = open(filename, "w", encoding='utf-8')
-            f.write(response.text)
-            f.close()
-
-            print("saved results to: " + filename)
+            # 1) create filename
+            # 2) call save 
+            filename = f"patents_{start_d}_to_{end_d}_from_{start_from}.json"
+            save_patent_data(response.text, filename)
             
             ## get results info
+            response_json = response.json()
             max_results = response_json['total']
             start_from = start_from + response_json['results']
 
             ## if max_results exists limit, set limit
             if (max_results > max_limit):
                 max_results = max_limit
+
+    return
+
+
+def save_patent_data(response_text, filename):
+    ## save to local (this option always happens regardless of save_to settting)
+    f = open(patent_data_folder + filename, "w", encoding='utf-8')
+    f.write(response_text)
+    f.close()
+    print("saved results to local folder: " + patent_data_folder + filename)
+
+    ## if save option is gdrive
+    if (save_to == 'gdrive'):
+        print('saved results to google drive repo')
+
+    ## if save option is azure
+    if (save_to == 'azure'):
+        print('Save to Azure has not been configured. Action skipped')
 
     return
 
@@ -190,6 +250,8 @@ def invalid_args(error):
             print("cannot use --month (last month) together with --before & --after. Refer to documentation for guidance.")
         case 3:
             print("--before and --after must be used together.")
+        case 4:
+            print("invalid save option detected. See valid options in config.ini")
     return
 
 ##
@@ -209,8 +271,8 @@ def get_prev_month(date = date.today()):
 def main():
     #arg definitions:
     #   --month     search range is last month                  || acts as default if no date range set
-    #   -csv        save results to csv file                    || acts as default if no save option set (TODO: apply db save as default)
     #   --before/--after                                        || manually set the date range to query.
+    #   --save                                                  || define if the raw data should be saved to local or cloud solution
 
     args = sys.argv[1:]                                     ## replace sys.argv with argparse
     d_range = False
@@ -220,6 +282,7 @@ def main():
     parser.add_argument('--month', action='store_true', help = 'set search range to last month (default value)')
     parser.add_argument('--before', dest='before', type=lambda d: datetime.strptime(d, '%Y-%m-%d'), help = 'date input must use the format YYYY-MM-DD')
     parser.add_argument('--after', dest='after', type=lambda d: datetime.strptime(d, '%Y-%m-%d'), help = 'date input must use the format YYYY-MM-DD')
+    parser.add_argument('--save', dest='save_to', type=str, help = "value determines how the data will be saved. See config.ini for default and valid options")
 
     pa = parser.parse_args()
 
@@ -255,7 +318,16 @@ def main():
     elif pa.before != None and pa.after != None:
         d_range = True      ## both before and after dates were provided
 
-    
+    ##### ERROR 4
+    ## was --save used? 
+    if pa.save_to is not None:
+        confirm_valid = confirm_valid_save(pa.save_to)      ## if --save was used, check if the option was valid
+        if(not confirm_valid):
+            invalid_args(4)                                 ## if invalid, return error message
+            return
+        else:
+            set_save_option(pa.save_to)                     ## if valid, override the default save option
+
 
     ##
     #   Part 2:
@@ -294,4 +366,5 @@ def main():
 
 ## Execute main
 if __name__ == "__main__":
+    set_config()
     main()
