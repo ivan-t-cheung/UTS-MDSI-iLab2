@@ -42,14 +42,16 @@ def define_gkg_header(mode='all'):
         return
     
 ### MAIN PROGRAM ###
-def main(before, after, master_filepath, gdrive_cred_file, gdrive_folder_id, update_master=True):
+def main(before, after, master_filepath, gdrive_cred_file, gdrive_folder_id, update_master=True, save_option):
     ### Initialise ###
     # import libraries
     import os
+    import configparser
     import pandas as pd
     from tqdm import tqdm
     import urllib
     from src.google_drive import create_gdrive_client, upload_file
+    config_file = '../config.ini'
 
     ### Master file list ###
     # define filepath for master list
@@ -87,19 +89,30 @@ def main(before, after, master_filepath, gdrive_cred_file, gdrive_folder_id, upd
         gkg_df = pd.concat([gkg_df, file_df])
     if http_err_count > 0:
         print(f'{http_err_count} files skipped due to HTTP errors')
-    ### Save data as CSV in Google Drive ###
+
+
+    settings = configparser.ConfigParser(inline_comment_prefixes="#")
+    settings.read(config_file)
+
+    ### Save data as CSV in LOCAL Drive ###
     # define filename
     gkg_csv_filename = f'gdelt_gkg_{after}_{before}.csv.gz'
     print(f'Saving GKG data as {gkg_csv_filename}')
+    filepath = settings['DEFAULT']['raw_data_folder'] + settings['GDELT']['subfolder']
     # save in compressed format
-    gkg_df.to_csv(gkg_csv_filename, index=None, compression='infer')
-    # authenticate and create Google Drive client
-    gdrive = create_gdrive_client(gdrive_cred_file)
-    # upload file to Google Drive
-    upload_file(gdrive, gdrive_folder_id, gkg_csv_filename)
-    print('Data saved in Google Drive')
+    gkg_df.to_csv(filepath + gkg_csv_filename, index=None, compression='infer')
+
+    ### Save data as CSV in Google Drive ###
+    if (save_option is not None):
+        if (save_option == 'gdrive'):
+            # authenticate and create Google Drive client
+            gdrive = create_gdrive_client(gdrive_cred_file)
+            # upload file to Google Drive
+            upload_file(gdrive, gdrive_folder_id, gkg_csv_filename)
+            print('Data saved in Google Drive')
+    
     # cleanup local file
-    os.remove(gkg_csv_filename)
+    # os.remove(gkg_csv_filename)           -- remove local file disabled (?? do we remove local file or keep local backups ?)
 
 ### SCRIPT TO RUN WHEN CALLED STANDALONE ###
 if __name__=='__main__':
@@ -112,7 +125,8 @@ if __name__=='__main__':
     parser.add_argument('--gdrive_cred_file', default=r'../auth/gdrive_credentials.txt', help='path to Google Drive credentials file')
     parser.add_argument('--gdrive_folder_id', default='17Jd7UpDaN230tO_U3MTFuE4GDbfYSIv6', help='Google Drive folder ID')
     parser.add_argument('--update_master', action=argparse.BooleanOptionalAction, default=True, help='download and save the master file list from GDELT')
+    parser.add_argument('--save', type=str, help = "value determines how the data will be saved. See config.ini for default and valid options")
     args = parser.parse_args()
 
     # run main
-    main(args.before, args.after, args.master_filepath, args.gdrive_cred_file , args.gdrive_folder_id, args.update_master)
+    main(args.before, args.after, args.master_filepath, args.gdrive_cred_file , args.gdrive_folder_id, args.update_master, args.save)
