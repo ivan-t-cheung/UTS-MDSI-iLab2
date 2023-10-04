@@ -42,7 +42,7 @@ def define_gkg_header(mode='all'):
         return
     
 ### MAIN PROGRAM ###
-def main(before, after, master_filepath, gdrive_cred_file, gdrive_folder_id, update_master=True, save_option):
+def main(before, after, master_filepath, gdrive_cred_file, gdrive_folder_id, update_master=True, save_option='local'):
     ### Initialise ###
     # import libraries
     import os
