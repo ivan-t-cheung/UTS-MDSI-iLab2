@@ -163,3 +163,5 @@ data/raw/journals/.DS_Store
 # Google Drive credentials
 client_secrets.json
 gdrive_credentials.txt
+data/processed/partial/
+data/raw/patents/
