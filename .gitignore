@@ -160,7 +160,8 @@ cython_debug/
 #.idea/
 
 # raw data
-data/raw/journals
+data/*
+
 # Google Drive credentials
 client_secrets.json
 gdrive_credentials.txt
