@@ -1,12 +1,14 @@
 import json
+import sys
+import configparser
 import requests
 import argparse
 
 search_url = 'https://api.lens.org/scholarly/search'
-auth_json = '../../api_auth.json' 
+auth_json = '../auth/api_auth.json' 
 q_type = 'Journal'                               ## set the publication types to retrieve, see https://docs.api.lens.org/response-scholar.html                                     ## set empty year
-q_size = 1000                                    ## set the number of journals to return each query. For paid licences change this number to 1,000 - 10,000
-max_limit = 5000                                 ## set the limit on the number of results to query for. This will override the max results if lower.
+q_size = 50000                                   ## set the number of journals to return each query. For paid licences change this number to 1,000 - 10,000
+max_limit = 999999                               ## set the limit on the number of results to query for. This will override the max results if lower.
  
 
 # Define the filters for match
@@ -29,7 +31,6 @@ def get_auth():
     api_auth.close()
 
     return authkey
-
 
 def build_query(filters_dict, start_from, start_d, end_d):
     # Initialize the query conditions list
@@ -127,6 +128,24 @@ def ingest_journals(start_d, end_d):
 
     return
 
+def save_journal_data():
+    from src.google_drive import create_gdrive_client, upload_file
+    from journal_cleaning import clean_journal
+    # calling function to save csv to processed folder
+    csv_filename = clean_journal()
+    print("saved CSV file to local processed folder")
+    
+    #get google drive info
+    gdrive_cred_file = ""
+    gdrive_folder_id = "1zsKuXBfbf9rowN32mOpkpVbZJFGAgPQA"
+    
+    # authenticate and create Google Drive client
+    gdrive = create_gdrive_client(gdrive_cred_file)
+    # upload file to Google Drive
+    upload_file(gdrive, gdrive_folder_id, csv_filename)
+    print('Data saved in Google Drive')
+
+    return
 
 def main():
 
@@ -142,8 +161,10 @@ def main():
     print("from: " + start_d)
     print("to: " + end_d)
     ingest_journals(start_d, end_d)
-    
+
     print("== Data ingestion completed ==")
+    save_journal_data()
+
     return 
 
 ## Execute main
