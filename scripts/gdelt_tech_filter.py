@@ -14,25 +14,32 @@ def main(input_filename, output_filename, columns, gdrive_cred_file , gdrive_fol
     # initialise regex patterns
     tech_terms = define_tech_terms()
     add_regex_pattern(tech_terms)
-    ### Text processing and filtering ###
-    # read CSV
-    input_filepath = os.path.join(settings['DEFAULT']['raw_data_folder'], settings['GDELT']['subfolder'], input_filename)
-    print(f'Reading file {input_filepath}')
-    df = pd.read_csv(input_filepath)
-    # combine text columns
-    input_cols = ast.literal_eval(columns)
-    df['combined_text'] = ''
-    for col in input_cols:
-        df['combined_text'] = df['combined_text'] + ' ' + df[col].astype(str)
-    # regex match
-    for tech in tech_terms:
-        print(f'Regex matching for {tech["tech"]}')
-        df[tech['tech']] = df['combined_text'].str.contains(tech['regex'], na=False)
-    # get list of output columns
-    output_cols = [tech['tech'] for tech in tech_terms]
-    # filter dataframe
-    df.drop(columns='combined_text', inplace=True)
-    filtered_df = df[df[output_cols].any(axis='columns')]
+    skip=1
+    df_len=1000000
+    filtered_df=pd.DataFrame()
+    while df_len>=1000000:
+        ### Text processing and filtering ###
+        # read CSV
+        input_filepath = os.path.join(settings['DEFAULT']['processed_data_folder'], settings['GDELT']['subfolder'], input_filename)
+        print(f'Reading file {input_filepath}')
+        df = pd.read_csv(input_filepath, nrows=1000000, skiprows=range(1, skip))
+        df_len = len(df)
+        # combine text columns
+        input_cols = ast.literal_eval(columns)
+        df['combined_text'] = ''
+        for col in input_cols:
+            df['combined_text'] = df['combined_text'] + ' ' + df[col].astype(str)
+        # regex match
+        for tech in tech_terms:
+            print(f'Regex matching for {tech["tech"]}')
+            df[tech['tech']] = df['combined_text'].str.contains(tech['regex'], na=False)
+        # get list of output columns
+        output_cols = [tech['tech'] for tech in tech_terms]
+        # filter dataframe
+        df.drop(columns='combined_text', inplace=True)
+        filtered_df = pd.concat([filtered_df, df[df[output_cols].any(axis='columns')]])
+        skip += 1000000
+        del df
 
     ### Save data as CSV in local drive ###
     # define output filepath
@@ -61,7 +68,7 @@ if __name__=='__main__':
     parser.add_argument('--output_filename', default=None, help='name for output CSV file')
     parser.add_argument('--columns', default='["DocumentIdentifier", "V2Organizations", "AllNames", "Extras"]', help='')
     parser.add_argument('--gdrive_cred_file', default=r'../auth/gdrive_credentials.txt', help='path to Google Drive credentials file')
-    parser.add_argument('--gdrive_folder_id', default='17Jd7UpDaN230tO_U3MTFuE4GDbfYSIv6', help='Google Drive folder ID')
+    parser.add_argument('--gdrive_folder_id', default='1zsKuXBfbf9rowN32mOpkpVbZJFGAgPQA', help='Google Drive folder ID')
     parser.add_argument('--save', default=None, type=str, help = "value determines how the data will be saved. See config.ini for default and valid options")
     args = parser.parse_args()
 
