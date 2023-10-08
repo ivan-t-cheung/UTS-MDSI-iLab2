@@ -1,22 +1,34 @@
 ### SUB FUNCTIONS ###
 def define_dimension_cols():
     return [{'dimension': 'locations',
-             'input': 'LocationsV2',
-             'outputs': ['location_type','location_name','country_code','adm1_code','adm2_code','','latitude','longitude','text_position']},
+             'input': 'V2Locations',
+             'duplicate_index': 2,
+             'delim': '#',
+             'outputs': ['location_type','location_name','country_code','adm1_code','adm2_code','latitude','longitude','feature_id','text_position','extra']},
             {'dimension': 'organisations',
-             'input': 'OrganizationsV2',
+             'input': 'V2Organizations',
+             'duplicate_index': 1,
+             'delim': ',',
              'outputs': ['org_name','text_position']},
             {'dimension': 'persons',
-             'input': 'PersonsV2',
+             'input': 'V2Persons',
+             'duplicate_index': 1,
+             'delim': ',',
              'outputs': ['person_name','text_position']},
             {'dimension': 'names',
-             'input': 'NamesV2',
+             'input': 'AllNames',
+             'duplicate_index': 1,
+             'delim': ',',
              'outputs': ['name','text_position']}]
 
-def create_dimension_df(df, input_col, output_cols):
+def create_dimension_df(df, input_col, output_cols, delim, duplicate_index):
     import pandas as pd
-    cols = df.loc[:,input_col].str.split(';').explode().str.split('#', expand=True)
-    return pd.concat(df.loc[:,'id'], cols).rename(columns=(['id'] + output_cols))
+    dim_cols = pd.concat([df.loc[:,'GKGRECORDID'], df.loc[:,input_col].str.split(';')], axis=1, ignore_index=True)
+    dim_cols = dim_cols.explode(1)
+    out_df = pd.concat([dim_cols.iloc[:,0], dim_cols.iloc[:,1].str.split(delim, expand=True)], axis=1, ignore_index=True)
+    out_df.drop_duplicates(subset=[out_df.columns[0],out_df.columns[duplicate_index]], inplace=True)
+    output_cols = ['record_id'] + output_cols
+    return out_df.set_axis(output_cols, axis=1)
 
 ### MAIN PROGRAM ###
 def main(gdrive_cred_file , gdrive_folder_id, save_option):
@@ -30,15 +42,19 @@ def main(gdrive_cred_file , gdrive_folder_id, save_option):
     config_file = '../config.ini'
     settings = configparser.ConfigParser(inline_comment_prefixes="#")
     settings.read(config_file)
-    input_path = os.path.normpath(settings['DEFAULT']['processed_data_folder'], settings['GDELT']['sub_folder'])
-    output_path = os.path.normpath(settings['DEFAULT']['dashboard_data_folder'], settings['GDELT']['sub_folder'])
+    input_path = os.path.join(settings['DEFAULT']['processed_data_folder'], settings['GDELT']['subfolder'])
+    output_path = os.path.join(settings['DEFAULT']['dashboard_data_folder'], settings['GDELT']['subfolder'])
 
     ### Identify and read new files ###
-    # read the log of ingested files
-    ingested_files = pd.read_csv(os.path.join(input_path, 'ingested_files.csv'))['filenames'].to_list()
     # get a list of files in input folder
-    all_files = glob.glob(os.path.join(input_path , "/*_filtered.csv"))
-    new_files = [filename for filename in all_files if filename not in ingested_files]
+    all_files = glob.glob(input_path + "*_filtered.csv")
+    try:
+        # read the log of ingested files
+        ingested_files = pd.read_csv(os.path.join(input_path, 'ingested_files.csv'))['filenames'].to_list()
+    except pd.errors.EmptyDataError:
+        new_files = all_files
+    else:    
+        new_files = [filename for filename in all_files if filename not in ingested_files]
     # read all unread files
     new_df_list = []
     for filename in new_files:
@@ -50,16 +66,19 @@ def main(gdrive_cred_file , gdrive_folder_id, save_option):
     ### Parse dimension features ###
     dims = define_dimension_cols()
     for dim in dims:
-        dim['df'] = create_dimension_df(df, dim['input'], dim['outputs'])
+        dim['df'] = create_dimension_df(df, dim['input'], dim['outputs'], dim['delim'], dim['duplicate_index'])
+    # catagorise technologies
+    record_df['tech'] = record_df[['quantum', 'semiconductors', 'cell-based meats', 'hydrogen power', 'personalised medicine']].idxmax(1)
     # select columns for main records table
-    select_cols = {'':'record_id', '':'date', '':'domain', '':'url', '':'technology'}
+    select_cols = {'GKGRECORDID':'record_id', 'DATE':'date', 'SourceCommonName':'domain', 'DocumentIdentifier':'url', 'tech':'technology'}
     record_df = record_df.rename(columns=select_cols)[select_cols.values()]
 
     ### Append new data to files ###  
-    output_df_list = [record_df] + [dim['df'] for dim in dims]
-    for df in output_df_list:
-        output_filepath = os.path.join(output_path, 'gdelt_records.csv')
-        df.to_csv(output_filepath, mode='a', index=False, header=False)
+    dims.append({'dimension': 'record', 'df': record_df})
+    print(len(dims))
+    for dim in dims:
+        output_filepath = os.path.join(output_path, f'gdelt_{dim["dimension"]}.csv')
+        dim['df'].to_csv(output_filepath, mode='a', index=False, header=dim['df'].columns)
         
         ### Save data as CSV in Google Drive ###
         if (save_option == 'gdrive'):
@@ -68,7 +87,7 @@ def main(gdrive_cred_file , gdrive_folder_id, save_option):
             # upload file to Google Drive
             upload_file(gdrive, gdrive_folder_id, output_filepath)
             print('Data saved in Google Drive')
-        return
+    return
 
     ### Append files to ingested log ###
     new_files_df = pd.DataFrame(new_files, columns=['filenames'])
