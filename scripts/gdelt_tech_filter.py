@@ -66,7 +66,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--input_filename', help='name of input CSV file')
     parser.add_argument('--output_filename', default=None, help='name for output CSV file')
-    parser.add_argument('--columns', default='["DocumentIdentifier", "V2Organizations", "AllNames", "Extras"]', help='')
+    parser.add_argument('--columns', default='["DocumentIdentifier", "V2Organizations", "AllNames", "Quotations", "Extras"]', help='')
     parser.add_argument('--gdrive_cred_file', default=r'../auth/gdrive_credentials.txt', help='path to Google Drive credentials file')
     parser.add_argument('--gdrive_folder_id', default='1zsKuXBfbf9rowN32mOpkpVbZJFGAgPQA', help='Google Drive folder ID')
     parser.add_argument('--save', default=None, type=str, help = "value determines how the data will be saved. See config.ini for default and valid options")
