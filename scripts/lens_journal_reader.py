@@ -4,20 +4,17 @@ import argparse
 
 search_url = 'https://api.lens.org/scholarly/search'
 auth_json = '../../api_auth.json' 
-q_countries = ['United States', 'Australia']     ## set the countries to retrieve, see https://docs.api.lens.org/request-scholar.html
-q_type = 'Journal'                               ## set the publication types to retrieve, see https://docs.api.lens.org/response-scholar.html
-q_date = ''                                      ## set empty year
-q_size = 100                                     ## set the number of journals to return each query. For paid licences change this number to 1,000 - 10,000
-max_limit = 300                                  ## set the limit on the number of results to query for. This will override the max results if lower.
+q_type = 'Journal'                               ## set the publication types to retrieve, see https://docs.api.lens.org/response-scholar.html                                     ## set empty year
+q_size = 1000                                    ## set the number of journals to return each query. For paid licences change this number to 1,000 - 10,000
+max_limit = 5000                                 ## set the limit on the number of results to query for. This will override the max results if lower.
  
 
 # Define the filters for match
 filters_dict = {
     'source.type': q_type,
-    'source.country':  q_countries,                 
+    'language': "en",                 
     'is_open_access': True,
-    'has_abstract': True,
-    'year_published': q_date
+    'has_abstract': True
 }
 
 
@@ -34,7 +31,7 @@ def get_auth():
     return authkey
 
 
-def build_query(filters_dict, start_from):
+def build_query(filters_dict, start_from, start_d, end_d):
     # Initialize the query conditions list
     query_conditions = []
 
@@ -50,6 +47,18 @@ def build_query(filters_dict, start_from):
             query_conditions.append({
                 'match': {key: value}
             })
+    
+    date_range = {
+        "range": {
+            "date_published": {
+                "gte": start_d,
+                "lte": end_d
+            }
+        }
+    }
+
+    query_conditions.append(date_range)
+
 
     # Build the 'must' clause of the query
     query_must = {
@@ -62,29 +71,36 @@ def build_query(filters_dict, start_from):
     query = {
         "query": query_must,
         "sort": [{"date_published": "asc"}], # sort with date published
+        "include": ["lens_id", 
+                "title", 
+                "abstract", 
+                "date_published", 
+                "authors",
+                "fields_of_study",
+                "keywords"
+                ],
         "from": start_from, 
         "size": q_size  # Number of results per page (adjust as needed)
     }
     
     return query
 
-def get_response(start_from = 0):
+def get_response(start_d, end_d, start_from = 0):
     
-    query = build_query(filters_dict, start_from)
-    print(query)
+    query = build_query(filters_dict, start_from, start_d, end_d)
     headers = {'Authorization': get_auth(), 'Content-Type': 'application/json'}
     response = requests.post(search_url, data=json.dumps(query), headers=headers)
 
     return response
 
-def ingest_journals():
+def ingest_journals(start_d, end_d):
     start_from = 0
     max_results = None
     ## check if there are more results to query || or if this is the first query
     ## Condition 1: results is None - make a request
     ## Condition 2: keep querying if the results is lower than max_results, or max_limit
     while (max_results is None) or (start_from < max_results):
-        response = get_response(start_from)
+        response = get_response(start_d, end_d, start_from)
         print(response)
 
         if response.status_code != requests.codes.ok:
@@ -94,7 +110,7 @@ def ingest_journals():
         else:
             ## save results
             response_json = response.json()
-            filename = "../data/raw/journals/" + f"journals_{filters_dict['year_published']}_from_{start_from}.json"
+            filename = "../data/raw/journals/" + f"journals_{start_d}_to_{end_d}_from_{start_from}.json"
             f = open(filename, "w", encoding='utf-8')
             f.write(response.text)
             f.close()
@@ -116,14 +132,16 @@ def main():
 
     # Define the command-line argument parser
     parser = argparse.ArgumentParser(description='Extract journal data from Lens.org.')
-    parser.add_argument('--year', type=int, required=True, help='Year of publication (e.g., 2020)')
+    parser.add_argument('--start_date', type=str, required=True, help='Start date of the date range (format: YYYY-MM-DD)')
+    parser.add_argument('--end_date', type=str, required=True, help='End date of the date range (format: YYYY-MM-DD)')
     args = parser.parse_args()
-    q_date = str(args.year)                           ## update year
-    filters_dict['year_published'] = q_date           ## add year to filter dictionary
-
+    start_d = args.start_date
+    end_d = args.end_date
+    
     print("== Starting ingestion from Lens ==")
-    print("publication year: " + q_date)
-    ingest_journals()
+    print("from: " + start_d)
+    print("to: " + end_d)
+    ingest_journals(start_d, end_d)
     
     print("== Data ingestion completed ==")
     return 
