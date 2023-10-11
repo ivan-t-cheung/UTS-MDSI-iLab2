@@ -42,7 +42,7 @@ def define_gkg_header(mode='all'):
         return
     
 ### MAIN PROGRAM ###
-def main(before, after, master_filepath, gdrive_cred_file, gdrive_folder_id, update_master=True, save_option='local'):
+def main(before, after, master_filepath, update_master=True, save_option='local'):
     ### Initialise ###
     # import libraries
     import os
@@ -52,10 +52,12 @@ def main(before, after, master_filepath, gdrive_cred_file, gdrive_folder_id, upd
     import urllib
     from src.google_drive import create_gdrive_client, upload_file
     config_file = '../config.ini'
+    settings = configparser.ConfigParser(inline_comment_prefixes="#")
+    settings.read(config_file)
 
     ### Master file list ###
     # define filepath for master list
-    master_csv_filepath = os.path.normpath(master_filepath)
+    master_csv_filepath = os.path.normpath(settings['GDELT']['master_filepath'])
     # either download master file or use local copy
     if (not os.path.isfile(master_csv_filepath)) or (update_master==True):
         print('Getting the latest master file list from data.gdeltproject.org')
@@ -91,8 +93,7 @@ def main(before, after, master_filepath, gdrive_cred_file, gdrive_folder_id, upd
         print(f'{http_err_count} files skipped due to HTTP errors')
 
 
-    settings = configparser.ConfigParser(inline_comment_prefixes="#")
-    settings.read(config_file)
+    
 
     ### Save data as CSV in LOCAL Drive ###
     # define filename
@@ -106,7 +107,8 @@ def main(before, after, master_filepath, gdrive_cred_file, gdrive_folder_id, upd
     if (save_option is not None):
         if (save_option == 'gdrive'):
             # authenticate and create Google Drive client
-            gdrive = create_gdrive_client(gdrive_cred_file)
+            gdrive = settings['GDRIVE']['credentials']
+            gdrive_folder_id = settings['GDRIVE.FOLDER_IDS']['gdelt_data']
             # upload file to Google Drive
             upload_file(gdrive, gdrive_folder_id, gkg_csv_filename)
             print('Data saved in Google Drive')
@@ -122,11 +124,9 @@ if __name__=='__main__':
     parser.add_argument('--after', help='date input in the format YYYY-MM-DD')
     parser.add_argument('--before', help='date input in the format YYYY-MM-DD')
     parser.add_argument('--master_filepath', default=r'../data/meta/gdelt_gkg_masterfilelist.csv', help='path to master file list CSV')
-    parser.add_argument('--gdrive_cred_file', default=r'../auth/gdrive_credentials.txt', help='path to Google Drive credentials file')
-    parser.add_argument('--gdrive_folder_id', default='17Jd7UpDaN230tO_U3MTFuE4GDbfYSIv6', help='Google Drive folder ID')
     parser.add_argument('--update_master', action=argparse.BooleanOptionalAction, default=True, help='download and save the master file list from GDELT')
     parser.add_argument('--save', type=str, help = "value determines how the data will be saved. See config.ini for default and valid options")
     args = parser.parse_args()
 
     # run main
-    main(args.before, args.after, args.master_filepath, args.gdrive_cred_file , args.gdrive_folder_id, args.update_master, args.save)
+    main(args.before, args.after, args.master_filepath, args.gdrive_cred_file , args.update_master, args.save)
