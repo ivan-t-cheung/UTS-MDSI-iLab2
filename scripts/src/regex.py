@@ -1,18 +1,19 @@
 import re
 
+#Defines a dictionary containing the keyword seach terms for the chosen emerging technologies.
 def define_tech_terms():
-    "Defines a dictionary containing the keyword seach terms for the chosen emerging technologies."
-    return [{'tech': 'quantum', 
-            'keywords': ['quantum']},
-            {'tech': 'semiconductors', 
-            'keywords': ['semiconductor','semi-conductor','microchip','micro-chip','microprocessor','integrated circuit','memory chip']},
-            {'tech': 'cell-based meats', 
-            'keywords': ['cell-based meat','cell based meat','cell-grown meat','cell grown meat','cultivated meat','cultured meat','cellular agriculture','lab-produced meat','lab produced meat','lab-grown meat','lab grown meat','synthetic meat','hybrid meat','artificial meat']},
-            {'tech': 'hydrogen power', 
-            'keywords': ['green hydrogen','clean hydrogen','renewable hydrogen','hydrogen storage','hydrogen transport','hydrogen project','hydrogen production','hydrogen electrolyser', 'hydrogen electrolysis','hydrogen technology','hydrogen tech','hydrogen energy','hydrogen plant','hydrogen station','hydrogen network','hydrogen hub','hydrogen power','hydrogen powered','hydrogen-powered','hydrogen supply','hydrogen market','hydrogen economy','hydrogen infrastructure','hydrogen vehicle','hydrogen fueled']},
-            {'tech': 'personalised medicine', 
-            'keywords': ['personalised medicine','personalized medicine','personalized treatment','personalised treatment','personalised cancer','individual medicine','individualised medicine','individualized medicine','personalised therapy','personalized therapy','precision medicine','precision health care','precision health-care','theranostic','theragnostic','oncogenomic','onco-genomic']},
-            ]
+    import configparser
+    config = configparser.ConfigParser()
+    config.read('../../regex_terms.ini')
+    
+    emerging_tech = []
+    for section in config.sections():
+        s = {}
+        s['tech'] = config.get(section, 'tech')
+        s['keywords'] = config.get(section, 'keywords')
+        emerging_tech.append(s)
+    
+    return emerging_tech
 
 def keywords_to_pattern(keyword_list, spaces_optional=True, word_boundaries=False, group=False): 
     """
