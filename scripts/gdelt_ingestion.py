@@ -112,6 +112,8 @@ def main(before, after, update_master=True, save_option='local'):
             # upload file to Google Drive
             upload_file(gdrive, gdrive_folder_id, gkg_csv_filename)
             print('Data saved in Google Drive')
+        if (save_option == 'azure'):
+            print('Save to Azure has not been configured. Action skipped')
     
 
 def get_month():

@@ -134,7 +134,7 @@ def ingest_journals(start_d, end_d):
 
     return
 
-def save_journal_data():
+def save_journal_data_gdrive():
     from src.google_drive import create_gdrive_client, upload_file
     from journal_cleaning import clean_journal
     # calling function to save csv to processed folder
@@ -150,7 +150,10 @@ def save_journal_data():
     # upload file to Google Drive
     upload_file(gdrive, gdrive_folder_id, csv_filename)
     print('Data saved in Google Drive')
+    return
 
+def save_journal_data_azure():
+    print('Save to Azure has not been configured. Action skipped')
     return
 
 def main():
@@ -177,9 +180,9 @@ def main():
 
     if parser.save_to is not None:
         if parser.save_to == 'gdrive':
-            save_journal_data()
+            save_journal_data_gdrive()
         if parser.save_to == 'azure':
-            print('Save to Azure has not been configured. Action skipped')
+            save_journal_data_azure()
 
     return 
 
