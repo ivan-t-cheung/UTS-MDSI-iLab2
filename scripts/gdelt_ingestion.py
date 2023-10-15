@@ -107,7 +107,7 @@ def main(before, after, master_filepath, update_master=True, save_option='local'
     if (save_option is not None):
         if (save_option == 'gdrive'):
             # authenticate and create Google Drive client
-            gdrive = settings['GDRIVE']['credentials']
+            gdrive = create_gdrive_client(settings['GDRIVE']['credentials'])
             gdrive_folder_id = settings['GDRIVE.FOLDER_IDS']['gdelt_data']
             # upload file to Google Drive
             upload_file(gdrive, gdrive_folder_id, gkg_csv_filename)
