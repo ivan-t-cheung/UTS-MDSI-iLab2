@@ -42,7 +42,7 @@ def define_gkg_header(mode='all'):
         return
     
 ### MAIN PROGRAM ###
-def main(before, after, master_filepath, update_master=True, save_option='local'):
+def main(before, after, update_master=True, save_option='local'):
     ### Initialise ###
     # import libraries
     import os
@@ -113,8 +113,14 @@ def main(before, after, master_filepath, update_master=True, save_option='local'
             upload_file(gdrive, gdrive_folder_id, gkg_csv_filename)
             print('Data saved in Google Drive')
     
-    # cleanup local file
-    # os.remove(gkg_csv_filename)           -- remove local file disabled (?? do we remove local file or keep local backups ?)
+
+def get_month():
+    from datetime import date
+    from datetime import timedelta
+    d = date.today()
+    end = d.replace(day=1) - timedelta(days = 1)
+    start = end.replace(day=1)
+    return str(start), str(end)
 
 ### SCRIPT TO RUN WHEN CALLED STANDALONE ###
 if __name__=='__main__':
@@ -123,9 +129,30 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--after', help='date input in the format YYYY-MM-DD')
     parser.add_argument('--before', help='date input in the format YYYY-MM-DD')
+    parser.add_argument('--month', action='store_true', help = 'set search range to last month (default value)')
     parser.add_argument('--update_master', action=argparse.BooleanOptionalAction, default=True, help='download and save the master file list from GDELT')
     parser.add_argument('--save', type=str, help = "value determines how the data will be saved. See config.ini for default and valid options")
     args = parser.parse_args()
 
-    # run main
-    main(args.before, args.after, args.gdrive_cred_file , args.update_master, args.save)
+    ## check number of date options used are valid.
+    d = 0
+    if (args.month):
+        d = d + 1
+    if (args.after != None or args.before != None):
+        d = d + 1
+
+    ## If both month and before/after are used together, return error message
+    if (d > 1):
+        print("cannot use --month (last month) together with --before & --after. Refer to documentation for guidance.")
+    
+    else:
+        # set before and after
+        # trigger: --month used, or no selection was picked.
+        if (args.month or d == 0):
+            after, before = get_month()
+        else:
+            before = args.before
+            after = args.after
+
+        # run main
+        main(before, after, args.update_master, args.save)
