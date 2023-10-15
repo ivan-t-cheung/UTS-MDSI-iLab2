@@ -95,6 +95,11 @@ def get_response(start_d, end_d, start_from = 0):
     return response
 
 def ingest_journals(start_d, end_d):
+    import configparser
+    config_file = '../config.ini'
+    settings = configparser.ConfigParser(inline_comment_prefixes="#")
+    settings.read(config_file)
+
     start_from = 0
     max_results = None
     ## check if there are more results to query || or if this is the first query
@@ -110,8 +115,9 @@ def ingest_journals(start_d, end_d):
             return
         else:
             ## save results
+            filepath = settings['DEFAULT']['raw_data_folder'] + settings['LENS_API.JOURNALS']['subfolder']
             response_json = response.json()
-            filename = "../data/raw/journals/" + f"journals_{start_d}_to_{end_d}_from_{start_from}.json"
+            filename = filepath + f"journals_{start_d}_to_{end_d}_from_{start_from}.json"
             f = open(filename, "w", encoding='utf-8')
             f.write(response.text)
             f.close()
@@ -148,15 +154,19 @@ def save_journal_data():
     return
 
 def main():
+    import configparser
+    config_file = '../config.ini'
+    settings = configparser.ConfigParser(inline_comment_prefixes="#")
+    settings.read(config_file)
 
     # Define the command-line argument parser
     parser = argparse.ArgumentParser(description='Extract journal data from Lens.org.')
-    parser.add_argument('--start_date', type=str, required=True, help='Start date of the date range (format: YYYY-MM-DD)')
-    parser.add_argument('--end_date', type=str, required=True, help='End date of the date range (format: YYYY-MM-DD)')
+    parser.add_argument('--after', type=str, required=True, help='Start date of the date range (format: YYYY-MM-DD)')
+    parser.add_argument('--before', type=str, required=True, help='End date of the date range (format: YYYY-MM-DD)')
     parser.add_argument('--save', dest='save_to', type=str, help = "value determines how the data will be saved. See config.ini for default and valid options")
     args = parser.parse_args()
-    start_d = args.start_date
-    end_d = args.end_date
+    start_d = args.after
+    end_d = args.before
     
     print("== Starting ingestion from Lens ==")
     print("from: " + start_d)
@@ -164,7 +174,12 @@ def main():
     ingest_journals(start_d, end_d)
 
     print("== Data ingestion completed ==")
-    save_journal_data()
+
+    if parser.save_to is not None:
+        if parser.save_to == 'gdrive':
+            save_journal_data()
+        if parser.save_to == 'azure':
+            print('Save to Azure has not been configured. Action skipped')
 
     return 
 
