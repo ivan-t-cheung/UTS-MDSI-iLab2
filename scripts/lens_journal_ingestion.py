@@ -156,6 +156,14 @@ def save_journal_data_azure():
     print('Save to Azure has not been configured. Action skipped')
     return
 
+def get_month():
+    from datetime import date
+    from datetime import timedelta
+    d = date.today()
+    end = d.replace(day=1) - timedelta(days = 1)
+    start = end.replace(day=1)
+    return str(start), str(end)
+
 def main():
     import configparser
     config_file = '../config.ini'
@@ -166,11 +174,34 @@ def main():
     parser = argparse.ArgumentParser(description='Extract journal data from Lens.org.')
     parser.add_argument('--after', type=str, required=True, help='Start date of the date range (format: YYYY-MM-DD)')
     parser.add_argument('--before', type=str, required=True, help='End date of the date range (format: YYYY-MM-DD)')
+    parser.add_argument('--month', action='store_true', help = 'set search range to last month (default value)')
     parser.add_argument('--save', dest='save_to', type=str, help = "value determines how the data will be saved. See config.ini for default and valid options")
     args = parser.parse_args()
-    start_d = args.after
-    end_d = args.before
+    start_d = None
+    end_d = None
     
+    ## select period to ingest:
+    ## check number of date options used are valid.
+    d = 0
+    if (args.month):
+        d = d + 1
+    if (args.after != None or args.before != None):
+        d = d + 1
+
+    ## If both month and before/after are used together, return error message
+    if (d > 1):
+        print("cannot use --month (last month) together with --before & --after. Refer to documentation for guidance.")
+    
+    else:
+        # set before and after
+        # trigger: --month used, or no selection was picked.
+        if (args.month or d == 0):
+            start_d, end_d = get_month()
+        else:
+            end_d = args.before
+            start_d = args.after
+    
+
     print("== Starting ingestion from Lens ==")
     print("from: " + start_d)
     print("to: " + end_d)
