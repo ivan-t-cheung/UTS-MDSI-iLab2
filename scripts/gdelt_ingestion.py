@@ -123,10 +123,9 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
     parser.add_argument('--after', help='date input in the format YYYY-MM-DD')
     parser.add_argument('--before', help='date input in the format YYYY-MM-DD')
-    parser.add_argument('--master_filepath', default=r'../data/meta/gdelt_gkg_masterfilelist.csv', help='path to master file list CSV')
     parser.add_argument('--update_master', action=argparse.BooleanOptionalAction, default=True, help='download and save the master file list from GDELT')
     parser.add_argument('--save', type=str, help = "value determines how the data will be saved. See config.ini for default and valid options")
     args = parser.parse_args()
 
     # run main
-    main(args.before, args.after, args.master_filepath, args.gdrive_cred_file , args.update_master, args.save)
+    main(args.before, args.after, args.gdrive_cred_file , args.update_master, args.save)
