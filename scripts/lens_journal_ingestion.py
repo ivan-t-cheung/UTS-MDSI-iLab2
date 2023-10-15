@@ -153,6 +153,7 @@ def main():
     parser = argparse.ArgumentParser(description='Extract journal data from Lens.org.')
     parser.add_argument('--start_date', type=str, required=True, help='Start date of the date range (format: YYYY-MM-DD)')
     parser.add_argument('--end_date', type=str, required=True, help='End date of the date range (format: YYYY-MM-DD)')
+    parser.add_argument('--save', dest='save_to', type=str, help = "value determines how the data will be saved. See config.ini for default and valid options")
     args = parser.parse_args()
     start_d = args.start_date
     end_d = args.end_date
