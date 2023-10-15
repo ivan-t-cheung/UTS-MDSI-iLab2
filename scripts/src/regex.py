@@ -2,17 +2,16 @@ import re
 
 #Defines a dictionary containing the keyword seach terms for the chosen emerging technologies.
 def define_tech_terms():
-    import configparser
+    import configparser, ast
     config = configparser.ConfigParser()
-    config.read('../../regex_terms.ini')
-    
+    config.read('../regex_terms.ini')
     emerging_tech = []
     for section in config.sections():
         s = {}
         s['tech'] = config.get(section, 'tech')
-        s['keywords'] = config.get(section, 'keywords')
+        s['keywords'] = ast.literal_eval(config.get(section, 'keywords'))   # read list
         emerging_tech.append(s)
-    
+        
     return emerging_tech
 
 def keywords_to_pattern(keyword_list, spaces_optional=True, word_boundaries=False, group=False): 
