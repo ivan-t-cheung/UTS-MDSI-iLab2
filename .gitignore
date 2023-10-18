@@ -162,6 +162,8 @@ cython_debug/
 # raw data
 data/raw/*
 data/processed/*
+data/dashboard/*
+data/modelling/*
 .DS_Store
 
 # Google Drive credentials
