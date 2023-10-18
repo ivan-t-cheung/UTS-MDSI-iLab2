@@ -133,9 +133,12 @@ def query_range(start, end):
 ###
 def response_include():
     include =   '''
-    "include": ["lens_id",  
+    "include": ["lens_id",
+                "title",  
                 "abstract.text", 
-                "date_published", 
+                "date_published",
+                "jurisdiction",
+                "patent_id", 
                 "publication_type",
                 "biblio.application_reference.doc_number",
                 "biblio.invention_title.text", 
