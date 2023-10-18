@@ -137,13 +137,17 @@ def ingest_journals(start_d, end_d):
 def save_journal_data_gdrive():
     from src.google_drive import create_gdrive_client, upload_file
     from journal_cleaning import clean_journal
+    config_file = '../config.ini'
+    settings = configparser.ConfigParser(inline_comment_prefixes="#")
+    settings.read(config_file)
+
     # calling function to save csv to processed folder
     csv_filename = clean_journal()
     print("saved CSV file to local processed folder")
     
     #get google drive info
-    gdrive_cred_file = ""
-    gdrive_folder_id = "1zsKuXBfbf9rowN32mOpkpVbZJFGAgPQA"
+    gdrive_cred_file = settings['GDRIVE']['credentials']
+    gdrive_folder_id = settings['GDRIVE.RAWDATA.FOLDER_IDS']['patent_data']
     
     # authenticate and create Google Drive client
     gdrive = create_gdrive_client(gdrive_cred_file)
