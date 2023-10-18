@@ -147,7 +147,7 @@ def save_journal_data_gdrive():
     
     #get google drive info
     gdrive_cred_file = settings['GDRIVE']['credentials']
-    gdrive_folder_id = settings['GDRIVE.RAWDATA.FOLDER_IDS']['patent_data']
+    gdrive_folder_id = settings['GDRIVE.RAWDATA.FOLDER_IDS']['journal_data']
     
     # authenticate and create Google Drive client
     gdrive = create_gdrive_client(gdrive_cred_file)
