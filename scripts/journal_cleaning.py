@@ -1,11 +1,18 @@
 import os
 import json
 import pandas as pd
+import configparser
 from src.author_info import extract_author_info
 
+## load config.ini
+config_file = '../config.ini'
+settings = configparser.ConfigParser(inline_comment_prefixes="#")
+settings.read(config_file)
+
+
 # Define the folder path
-src_folder_path = '../data/raw/journals/'
-dest_folder = '../data/processed/'
+src_folder_path = settings['DEFAULT']['raw_data_folder'] + settings['LENS_API.JOURNALS']['subfolder']
+dest_folder = settings['DEFAULT']['processed_data_folder'] + settings['LENS_API.JOURNALS']['subfolder']
 
 def clean_journal():
     # Initialize an empty list to store DataFrames from each file
