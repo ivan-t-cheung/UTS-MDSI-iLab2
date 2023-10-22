@@ -1,5 +1,5 @@
 ### MAIN PROGRAM ###
-def main(source, input_filename, output_filename, gdrive_cred_file , gdrive_folder_id, save_option):
+def main(source, input_filename, output_filename, save_option):
     ### Initialise ###
     # import libraries
     import os, ast
@@ -11,12 +11,16 @@ def main(source, input_filename, output_filename, gdrive_cred_file , gdrive_fold
     # read settings from config file
     settings = configparser.ConfigParser(inline_comment_prefixes="#")
     settings.read(config_file)
+    ##load gdrive data
+    gdrive_cred_file = settings['GDRIVE']['credentials']
+    
+
     # initialise regex patterns
     tech_terms = define_tech_terms()
     add_regex_pattern(tech_terms)
     ### Text processing and filtering ###
     # create input filepath
-    input_filepath = os.path.join(settings['DEFAULT']['processed_data_folder'], settings[source]['subfolder'], input_filename)
+    input_filepath = os.path.join(settings['DEFAULT']['filtered_data_folder'], settings[source]['subfolder'], input_filename)
     print(f'Reading file {input_filepath}')
     # read CSV or parquet based on file extension
     file_extension = input_filename.split('.')[1].lower()
@@ -45,18 +49,22 @@ def main(source, input_filename, output_filename, gdrive_cred_file , gdrive_fold
     # define output filepath
     if output_filename is None:
         output_filename = input_filename.split('.')[0] + '_filtered.csv'
-    output_filepath = os.path.join(settings['DEFAULT']['processed_data_folder'], settings[source]['subfolder'], output_filename)
+    output_filepath = os.path.join(settings['DEFAULT']['filtered_data_folder'], settings[source]['subfolder'], output_filename)
     print(f'Saving filtered data as {output_filepath}')
     # save as CSV
     filtered_df.to_csv(output_filepath)
 
     ### Save data as CSV in Google Drive ###
     if (save_option == 'gdrive'):
+        gdrive_folder_id = settings['GDRIVE.FILTERED.FOLDER_IDS'][source]
         # authenticate and create Google Drive client
         gdrive = create_gdrive_client(gdrive_cred_file)
         # upload file to Google Drive
         upload_file(gdrive, gdrive_folder_id, output_filepath)
         print('Data saved in Google Drive')
+    if (save_option == 'azure'):
+        print('Save to Azure has not been configured. Action skipped')
+
     return
 
 ### SCRIPT TO RUN WHEN CALLED STANDALONE ###
@@ -67,10 +75,8 @@ if __name__=='__main__':
     parser.add_argument('--source', help='choose from GDELT, LENS_API.PATENTS, LENS_API.JOURNALS')
     parser.add_argument('--input_filename', help='name of input CSV file')
     parser.add_argument('--output_filename', default=None, help='name for output CSV file')
-    parser.add_argument('--gdrive_cred_file', default=r'../auth/gdrive_credentials.txt', help='path to Google Drive credentials file')
-    parser.add_argument('--gdrive_folder_id', default='1zsKuXBfbf9rowN32mOpkpVbZJFGAgPQA', help='Google Drive folder ID')
     parser.add_argument('--save', default=None, type=str, help = "value determines how the data will be saved. See config.ini for default and valid options")
     args = parser.parse_args()
 
     # run main
-    main(args.source, args.input_filename, args.output_filename, args.gdrive_cred_file , args.gdrive_folder_id, args.save)
+    main(args.source, args.input_filename, args.output_filename, args.save)
