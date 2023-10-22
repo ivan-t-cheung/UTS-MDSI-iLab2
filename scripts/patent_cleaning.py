@@ -21,7 +21,7 @@ settings.read(config_file)
 ## return the files that have not yet been processed
 def identify_new_files():
     ## read the raw files
-    path = r'..\data\raw\patents\*.gz'
+    path = settings['DEFAULT']['raw_data_folder'] + settings['LENS_API.PATENTS']['subfolder'] + '*'
     files = glob.glob(path)
     s1 = pd.Series(files)
 
@@ -46,8 +46,8 @@ def save_data_gdrive(patents_data, patents_classifications, patents_applicants, 
     from journal_cleaning import clean_journal
 
     #get google drive info
-    gdrive_cred_file = ""
-    gdrive_folder_id = "1zsKuXBfbf9rowN32mOpkpVbZJFGAgPQA"
+    gdrive_cred_file = settings['GDRIVE']['credentials']
+    gdrive_folder_id = settings['GDRIVE.FOLDER_IDS']['patent_data']
 
     # authenticate and create Google Drive client
     gdrive = create_gdrive_client(gdrive_cred_file)
@@ -148,13 +148,13 @@ def main(save_to = None):
         pd.DataFrame(patents_applicants).to_parquet(path + filename + "_applicants.parquet", index=False)
         pd.DataFrame(patents_inventors).to_parquet(path + filename + "_inventors.parquet", index=False)
 
-        if parser.save_to is not None:
-            if parser.save_to == 'gdrive':
+        if save_to is not None:
+            if save_to == 'gdrive':
                 save_data_gdrive(path + filename + "_data.parquet", 
                                  path + filename + "_classifications.parquet", 
                                  path + filename + "_applicants.parquet", 
                                  path + filename + "_inventors.parquet")
-            if parser.save_to == 'azure':
+            if save_to == 'azure':
                 save_data_azure(path + filename + "_data.parquet", 
                                  path + filename + "_classifications.parquet", 
                                  path + filename + "_applicants.parquet", 
@@ -175,7 +175,7 @@ def main(save_to = None):
 ## Execute main
 if __name__ == "__main__":
     # Define the command-line argument parser
-    parser = argparse.ArgumentParser(description='Parse journal data from Lens.org.')
+    parser = argparse.ArgumentParser(description='Parse patent data from Lens.org.')
     parser.add_argument('--save', dest='save_to', type=str, help = "value determines how the data will be saved. See config.ini for default and valid options")
     args = parser.parse_args()
 
