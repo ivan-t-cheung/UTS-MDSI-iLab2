@@ -20,7 +20,9 @@ def main(source, input_filename, output_filename, save_option):
     add_regex_pattern(tech_terms)
     ### Text processing and filtering ###
     # create input filepath
-    input_filepath = os.path.join(settings['DEFAULT']['filtered_data_folder'], settings[source]['subfolder'], input_filename)
+    input_filepath = os.path.join(settings['DEFAULT']['processed_data_folder'], settings[source]['subfolder'], input_filename)
+    if(source == 'GDELT'):
+        input_filepath = os.path.join(settings['DEFAULT']['raw_data_folder'], settings[source]['subfolder'], input_filename)
     print(f'Reading file {input_filepath}')
     # read CSV or parquet based on file extension
     file_extension = input_filename.split('.')[1].lower()
