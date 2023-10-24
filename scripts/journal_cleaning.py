@@ -45,7 +45,7 @@ def clean_journal(files):
 
     # Concatenate all DataFrames in the list into a single DataFrame
     df = pd.concat(dfs, ignore_index=True)
-    df['date_published'] = pd.to_datetime(df['date_published']).dt.strftime('%y-%m-%d')
+    df['date_published'] = pd.to_datetime(df['date_published'], format = '%y-%m-%d')
     # Apply the function to create the "author", "institution", and "country" columns
     df[['author', 'institution', 'country']] = df.apply(extract_author_info, axis=1).apply(pd.Series)
     # drop authors column
