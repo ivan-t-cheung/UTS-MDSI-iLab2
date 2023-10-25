@@ -92,9 +92,6 @@ def main(before, after, update_master=True, save_option='local'):
     if http_err_count > 0:
         print(f'{http_err_count} files skipped due to HTTP errors')
 
-
-    
-
     ### Save data as CSV in LOCAL Drive ###
     # define filename
     gkg_csv_filename = f'gdelt_gkg_{after}_{before}.csv.gz'
@@ -110,7 +107,7 @@ def main(before, after, update_master=True, save_option='local'):
             gdrive = create_gdrive_client(settings['GDRIVE']['credentials'])
             gdrive_folder_id = settings['GDRIVE.RAWDATA.FOLDER_IDS']['gdelt_data']
             # upload file to Google Drive
-            upload_file(gdrive, gdrive_folder_id, gkg_csv_filename)
+            upload_file(gdrive, gdrive_folder_id, filepath + gkg_csv_filename)
             print('Data saved in Google Drive')
         if (save_option == 'azure'):
             print('Save to Azure has not been configured. Action skipped')
