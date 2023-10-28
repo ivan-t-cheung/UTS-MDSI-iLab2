@@ -37,7 +37,7 @@ def identify_new_files():
 def append_processed_files_to_log(files):
     df = pd.read_csv('../data/meta/process_log/processed_patents.csv')
     new_df = pd.DataFrame(pd.concat([df['processed files'], files]), columns=['processed files'])
-    new_df.to_csv('../data/meta/process_log/processed_patents.csv')
+    new_df.to_csv('../data/meta/process_log/processed_patents.csv', index=False)
     return
 
 
@@ -77,9 +77,15 @@ def main(save_to = None):
         if (file_ext =='.gz'):
             f = gzip.open(file, 'rt', encoding="ascii", errors="ignore")
         if (file_ext =='.json'):
-            file_reader = open(file)
+            file_reader = open(file, encoding="ascii", errors="ignore")
             data = json.load(file_reader)
-            f = data['data']
+            if "data" in data:
+                f = data['data']
+            elif "results" in data:
+                f = data['results']
+            else:
+                file_reader.close()
+                print(f'Error: unable to locate data in {file}')
             file_reader.close()
         
         for line in f:
@@ -148,6 +154,8 @@ def main(save_to = None):
         pd.DataFrame(patents_applicants).to_parquet(path + filename + "_applicants.parquet", index=False)
         pd.DataFrame(patents_inventors).to_parquet(path + filename + "_inventors.parquet", index=False)
 
+        print(f'Saved data, classifications, applicants, inventors for {filename}')
+
         if save_to is not None:
             if save_to == 'gdrive':
                 save_data_gdrive(path + filename + "_data.parquet", 
@@ -180,5 +188,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
 
 
-
-    main(parser.save_to)
+    main(args.save_to)
