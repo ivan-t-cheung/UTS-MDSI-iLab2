@@ -47,7 +47,7 @@ def set_config():
     q_types = ast.literal_eval(settings['LENS_API.PATENTS']['types'])
     q_size = settings['LENS_API.PATENTS']['size'] 
     max_limit = settings['LENS_API.PATENTS']['max_limit'] 
-    patent_data_folder = settings['DEFAULT']['raw_data_folder'] + settings['LENS_API.PATENTS']['patent_subfolder'] 
+    patent_data_folder = settings['DEFAULT']['raw_data_folder'] + settings['LENS_API.PATENTS']['subfolder'] 
 
     save_to = settings['DEFAULT']['save_data']
 
@@ -366,8 +366,8 @@ def main():
     end_d = ''
 
     if d_range:
-        start_d = pa.after.date()
-        end_d = pa.before.date()
+        start_d = str(pa.after.date())
+        end_d = str(pa.before.date())
     elif d_range == False:
         start_d, end_d = get_prev_month()
     

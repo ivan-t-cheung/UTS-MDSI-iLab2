@@ -40,12 +40,11 @@ def clean_journal(files):
             # Append the DataFrame to the list
             dfs.append(df)
         
-        ## after reading, add file to processed log
-        append_processed_files_to_log(json_file)
+        
 
     # Concatenate all DataFrames in the list into a single DataFrame
     df = pd.concat(dfs, ignore_index=True)
-    df['date_published'] = pd.to_datetime(df['date_published'], format = '%y-%m-%d')
+    df['date_published'] = pd.to_datetime(df['date_published'], format = 'ISO8601')
     # Apply the function to create the "author", "institution", and "country" columns
     df[['author', 'institution', 'country']] = df.apply(extract_author_info, axis=1).apply(pd.Series)
     # drop authors column
@@ -53,6 +52,7 @@ def clean_journal(files):
     # Convert the list of strings into a single string, separated by commas
     df['fields_of_study'] = df['fields_of_study'].apply(lambda x: ', '.join(x) if isinstance(x, list) else '')
     df['keywords'] = df['keywords'].apply(lambda x: ', '.join(x) if isinstance(x, list) else '')
+    df['date_published'] = df['date_published'].dt.date
 
 
     ## save to dest folder
@@ -60,6 +60,10 @@ def clean_journal(files):
     last_dt = df['date_published'].max()
     filename = dest_folder + f'journals_{first_dt}_to_{last_dt}.csv'
     df.to_csv(filename, index = False)
+    print(f'Saved {filename}')
+
+    ## after reading, add file to processed log
+    append_processed_files_to_log(files)
 
     return filename
 
@@ -121,4 +125,4 @@ if __name__ == "__main__":
     parser.add_argument('--save', dest='save_to', type=str, help = "value determines how the data will be saved. See config.ini for default and valid options")
     args = parser.parse_args()
 
-    main(parser.save_to)
+    main(args.save_to)
