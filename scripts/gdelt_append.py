@@ -42,8 +42,8 @@ def main(gdrive_cred_file , gdrive_folder_id, save_option):
     config_file = '../config.ini'
     settings = configparser.ConfigParser(inline_comment_prefixes="#")
     settings.read(config_file)
-    input_path = os.path.join(settings['DEFAULT']['processed_data_folder'], settings['GDELT']['subfolder'])
-    output_path = os.path.join(settings['DEFAULT']['dashboard_data_folder'], settings['GDELT']['subfolder'])
+    input_path = os.path.join(settings['DEFAULT']['filtered_data_folder'], settings['GDELT']['subfolder'])
+    output_path = os.path.join(settings['DEFAULT']['dashboard_data_folder'])
 
     ### Identify and read new files ###
     # get a list of files in input folder
@@ -66,7 +66,7 @@ def main(gdrive_cred_file , gdrive_folder_id, save_option):
     ### Parse dimension features ###
     dims = define_dimension_cols()
     for dim in dims:
-        dim['df'] = create_dimension_df(df, dim['input'], dim['outputs'], dim['delim'], dim['duplicate_index'])
+        dim['df'] = create_dimension_df(record_df, dim['input'], dim['outputs'], dim['delim'], dim['duplicate_index'])
     # catagorise technologies
     record_df['tech'] = record_df[['quantum', 'semiconductors', 'cell-based meats', 'hydrogen power', 'personalised medicine']].idxmax(1)
     # select columns for main records table
@@ -78,7 +78,7 @@ def main(gdrive_cred_file , gdrive_folder_id, save_option):
     print(len(dims))
     for dim in dims:
         output_filepath = os.path.join(output_path, f'gdelt_{dim["dimension"]}.csv')
-        dim['df'].to_csv(output_filepath, mode='a', index=False, header=dim['df'].columns)
+        dim['df'].to_csv(output_filepath, mode='a', index=False)
         
         ### Save data as CSV in Google Drive ###
         if (save_option == 'gdrive'):
@@ -87,11 +87,11 @@ def main(gdrive_cred_file , gdrive_folder_id, save_option):
             # upload file to Google Drive
             upload_file(gdrive, gdrive_folder_id, output_filepath)
             print('Data saved in Google Drive')
-    return
 
     ### Append files to ingested log ###
     new_files_df = pd.DataFrame(new_files, columns=['filenames'])
-    new_files_df.to_csv(input_path, mode='a', index=False, header=False)
+    new_files_df.to_csv(os.path.join(input_path, 'ingested_files.csv'), mode='a', index=False, header=False)
+    return
 
 ### SCRIPT TO RUN WHEN CALLED STANDALONE ###
 if __name__=='__main__':
